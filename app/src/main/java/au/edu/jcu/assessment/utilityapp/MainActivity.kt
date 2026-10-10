@@ -6,12 +6,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import au.edu.jcu.assessment.utilityapp.ui.theme.MobileTech_UtilityAppTheme
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,6 +27,19 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun StudyTimerScreen() {
+    var remainingSeconds by remember { mutableIntStateOf(25 * 60) }
+
+    LaunchedEffect(Unit) {
+        while (remainingSeconds > 0) {
+            delay(1000L)
+            remainingSeconds--
+        }
+    }
+
+    val minutes = remainingSeconds / 60
+    val seconds = remainingSeconds % 60
+    val formattedTime = "%02d:%02d".format(minutes, seconds)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -34,14 +48,11 @@ fun StudyTimerScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Study Timer",
+            "Study Timer",
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Text(
-            text = "Stay focused and achieve your goals!",
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Text("Stay focused and achieve your goals!")
 
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
@@ -52,11 +63,18 @@ fun StudyTimerScreen() {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text("FOCUS SESSION")
+
                 Text(
-                    text = "25:00",
+                    formattedTime,
                     style = MaterialTheme.typography.displayLarge
                 )
-                Text("Ready to study?")
+
+                Text(
+                    if (remainingSeconds == 0)
+                        "Session complete!"
+                    else
+                        "Keep focusing!"
+                )
             }
         }
 
