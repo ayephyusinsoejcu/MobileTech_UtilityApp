@@ -28,11 +28,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun StudyTimerScreen() {
     var remainingSeconds by remember { mutableIntStateOf(25 * 60) }
+    var isRunning by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        while (remainingSeconds > 0) {
+    LaunchedEffect(isRunning, remainingSeconds) {
+        if (isRunning && remainingSeconds > 0) {
             delay(1000L)
             remainingSeconds--
+        } else if (remainingSeconds == 0) {
+            isRunning = false
         }
     }
 
@@ -70,11 +73,36 @@ fun StudyTimerScreen() {
                 )
 
                 Text(
-                    if (remainingSeconds == 0)
-                        "Session complete!"
-                    else
-                        "Keep focusing!"
+                    when {
+                        remainingSeconds == 0 -> "Session complete!"
+                        isRunning -> "Keep focusing!"
+                        else -> "Ready to study?"
+                    }
                 )
+            }
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(
+                onClick = {
+                    if (remainingSeconds > 0) {
+                        isRunning = !isRunning
+                    }
+                },
+                enabled = remainingSeconds > 0
+            ) {
+                Text(if (isRunning) "Pause" else "Start")
+            }
+
+            OutlinedButton(
+                onClick = {
+                    isRunning = false
+                    remainingSeconds = 25 * 60
+                }
+            ) {
+                Text("Reset")
             }
         }
 
