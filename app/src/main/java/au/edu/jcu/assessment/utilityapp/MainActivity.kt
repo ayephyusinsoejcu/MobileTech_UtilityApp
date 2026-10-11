@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -30,6 +32,8 @@ class MainActivity : ComponentActivity() {
 fun UtilityApp() {
     var selectedTab by remember { mutableStateOf("Timer") }
     var sessionMode by remember { mutableStateOf("Focus") }
+    var focusMinutes by remember { mutableIntStateOf(25) }
+    var breakMinutes by remember { mutableIntStateOf(5) }
     var remainingMillis by remember { mutableLongStateOf(25L * 60_000L) }
     var isRunning by remember { mutableStateOf(false) }
     var deadlineMillis by remember { mutableLongStateOf(0L) }
@@ -40,7 +44,6 @@ fun UtilityApp() {
                 val left = (
                         deadlineMillis - SystemClock.elapsedRealtime()
                         ).coerceAtLeast(0L)
-
                 remainingMillis = left
 
                 if (left == 0L) {
@@ -53,7 +56,7 @@ fun UtilityApp() {
     }
 
     val totalMillis =
-        (if (sessionMode == "Focus") 25 else 5) * 60_000L
+        (if (sessionMode == "Focus") focusMinutes else breakMinutes) * 60_000L
 
     MobileTech_UtilityAppTheme {
         Scaffold(
@@ -99,8 +102,10 @@ fun UtilityApp() {
                         onModeChange = { mode ->
                             sessionMode = mode
                             isRunning = false
-                            remainingMillis =
-                                (if (mode == "Focus") 25 else 5) * 60_000L
+                            remainingMillis = (
+                                    if (mode == "Focus") focusMinutes
+                                    else breakMinutes
+                                    ) * 60_000L
                         },
 
                         onStartPause = {
@@ -124,7 +129,28 @@ fun UtilityApp() {
                         }
                     )
                 } else {
-                    SettingsScreen()
+                    SettingsScreen(
+                        focusMinutes = focusMinutes,
+                        breakMinutes = breakMinutes,
+
+                        onFocusChange = { value ->
+                            focusMinutes = value
+
+                            if (sessionMode == "Focus") {
+                                isRunning = false
+                                remainingMillis = value * 60_000L
+                            }
+                        },
+
+                        onBreakChange = { value ->
+                            breakMinutes = value
+
+                            if (sessionMode == "Break") {
+                                isRunning = false
+                                remainingMillis = value * 60_000L
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -141,6 +167,7 @@ fun TimerScreen(
     onReset: () -> Unit
 ) {
     val displaySeconds = (remainingMillis + 999L) / 1000L
+
     val formattedTime = "%02d:%02d".format(
         displaySeconds / 60,
         displaySeconds % 60
@@ -160,9 +187,7 @@ fun TimerScreen(
 
         Text("Make every minute count.")
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(onClick = { onModeChange("Focus") }) {
                 Text(
                     if (sessionMode == "Focus") "✓ Focus"
@@ -208,9 +233,7 @@ fun TimerScreen(
             }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
                 onClick = onStartPause,
                 enabled = remainingMillis > 0L
@@ -228,19 +251,56 @@ fun TimerScreen(
 }
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    focusMinutes: Int,
+    breakMinutes: Int,
+    onFocusChange: (Int) -> Unit,
+    onBreakChange: (Int) -> Unit
+) {
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         Text(
             "Settings",
             style = MaterialTheme.typography.headlineMedium
         )
 
-        Text("Personalize your focus experience")
+        Text(
+            "Study duration",
+            style = MaterialTheme.typography.titleMedium
+        )
 
-        Text("Duration controls coming next")
+        listOf(15, 25, 30, 45, 60).forEach { duration ->
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onFocusChange(duration) }
+            ) {
+                Text(
+                    "$duration minutes" +
+                            if (focusMinutes == duration) " ✓" else ""
+                )
+            }
+        }
+
+        Text(
+            "Break duration",
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        listOf(5, 10, 15).forEach { duration ->
+            OutlinedButton(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onBreakChange(duration) }
+            ) {
+                Text(
+                    "$duration minutes" +
+                            if (breakMinutes == duration) " ✓" else ""
+                )
+            }
+        }
     }
 }
