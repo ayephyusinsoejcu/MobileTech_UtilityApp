@@ -2,22 +2,23 @@
 package au.edu.jcu.assessment.utilityapp
 
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import au.edu.jcu.assessment.utilityapp.ui.theme.MobileTech_UtilityAppTheme
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         setContent {
             UtilityApp()
         }
@@ -26,13 +27,82 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun UtilityApp() {
+    var remainingMillis by remember {
+        mutableLongStateOf(25L * 60_000L)
+    }
+
+    var isRunning by remember {
+        mutableStateOf(false)
+    }
+
+    var deadlineMillis by remember {
+        mutableLongStateOf(0L)
+    }
+
+    // Countdown timer
+    LaunchedEffect(isRunning, deadlineMillis) {
+        if (isRunning) {
+            while (true) {
+                val left = (
+                        deadlineMillis - SystemClock.elapsedRealtime()
+                        ).coerceAtLeast(0L)
+
+                remainingMillis = left
+
+                if (left == 0L) {
+                    isRunning = false
+                    break
+                }
+
+                delay(100L)
+            }
+        }
+    }
+
+    val totalMillis = 25L * 60_000L
+
     MobileTech_UtilityAppTheme {
-        TimerScreen()
+        TimerScreen(
+            remainingMillis = remainingMillis,
+            isRunning = isRunning,
+
+            onStartPause = {
+                if (isRunning) {
+                    remainingMillis = (
+                            deadlineMillis - SystemClock.elapsedRealtime()
+                            ).coerceAtLeast(0L)
+
+                    isRunning = false
+                } else if (remainingMillis > 0L) {
+                    deadlineMillis =
+                        SystemClock.elapsedRealtime() + remainingMillis
+
+                    isRunning = true
+                }
+            },
+
+            onReset = {
+                isRunning = false
+                remainingMillis = totalMillis
+            }
+        )
     }
 }
 
 @Composable
-fun TimerScreen() {
+fun TimerScreen(
+    remainingMillis: Long,
+    isRunning: Boolean,
+    onStartPause: () -> Unit,
+    onReset: () -> Unit
+) {
+    val displaySeconds = (remainingMillis + 999L) / 1000L
+
+    val formattedTime = "%02d:%02d".format(
+        displaySeconds / 60,
+        displaySeconds % 60
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -41,15 +111,13 @@ fun TimerScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "StudyFlow",
+            "StudyFlow",
             style = MaterialTheme.typography.headlineMedium
         )
 
         Text("Make every minute count.")
 
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -60,11 +128,32 @@ fun TimerScreen() {
                 Text("FOCUS SESSION")
 
                 Text(
-                    text = "25:00",
+                    formattedTime,
                     style = MaterialTheme.typography.displayLarge
                 )
 
-                Text("Ready to Begin")
+                Text(
+                    when {
+                        remainingMillis == 0L -> "Session Complete!"
+                        isRunning -> "Keep Going!"
+                        else -> "Ready to Begin"
+                    }
+                )
+            }
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onStartPause,
+                enabled = remainingMillis > 0L
+            ) {
+                Text(if (isRunning) "Pause" else "Start")
+            }
+
+            OutlinedButton(onClick = onReset) {
+                Text("Reset")
             }
         }
 
