@@ -27,6 +27,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun UtilityApp() {
+    var sessionMode by remember {
+        mutableStateOf("Focus")
+    }
+
     var remainingMillis by remember {
         mutableLongStateOf(25L * 60_000L)
     }
@@ -39,7 +43,6 @@ fun UtilityApp() {
         mutableLongStateOf(0L)
     }
 
-    // Countdown timer
     LaunchedEffect(isRunning, deadlineMillis) {
         if (isRunning) {
             while (true) {
@@ -59,12 +62,22 @@ fun UtilityApp() {
         }
     }
 
-    val totalMillis = 25L * 60_000L
+    val totalMillis =
+        (if (sessionMode == "Focus") 25 else 5) * 60_000L
 
     MobileTech_UtilityAppTheme {
         TimerScreen(
             remainingMillis = remainingMillis,
             isRunning = isRunning,
+            sessionMode = sessionMode,
+
+            onModeChange = { mode ->
+                sessionMode = mode
+                isRunning = false
+
+                remainingMillis =
+                    (if (mode == "Focus") 25 else 5) * 60_000L
+            },
 
             onStartPause = {
                 if (isRunning) {
@@ -93,6 +106,8 @@ fun UtilityApp() {
 fun TimerScreen(
     remainingMillis: Long,
     isRunning: Boolean,
+    sessionMode: String,
+    onModeChange: (String) -> Unit,
     onStartPause: () -> Unit,
     onReset: () -> Unit
 ) {
@@ -117,6 +132,29 @@ fun TimerScreen(
 
         Text("Make every minute count.")
 
+        // Focus and Break buttons
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = { onModeChange("Focus") }
+            ) {
+                Text(
+                    if (sessionMode == "Focus") "✓ Focus"
+                    else "Focus"
+                )
+            }
+
+            Button(
+                onClick = { onModeChange("Break") }
+            ) {
+                Text(
+                    if (sessionMode == "Break") "✓ Break"
+                    else "Break"
+                )
+            }
+        }
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(
                 modifier = Modifier
@@ -125,7 +163,12 @@ fun TimerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("FOCUS SESSION")
+                Text(
+                    if (sessionMode == "Focus")
+                        "FOCUS SESSION"
+                    else
+                        "BREAK SESSION"
+                )
 
                 Text(
                     formattedTime,
