@@ -1,3 +1,4 @@
+
 package au.edu.jcu.assessment.utilityapp
 
 import android.app.Activity
@@ -14,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,31 +22,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import au.edu.jcu.assessment.utilityapp.ui.theme.MobileTech_UtilityAppTheme
-import au.edu.jcu.assessment.utilityapp.viewmodel.QuoteViewModel
 import kotlinx.coroutines.delay
 
-// ============================================
 // SESSION MODES
-// ============================================
-
 enum class SessionMode {
     FOCUS,
     BREAK
 }
 
-// ============================================
 // MAIN ACTIVITY
-// ============================================
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,10 +53,7 @@ fun UtilityAppPreview() {
     UtilityApp()
 }
 
-// ============================================
 // MAIN APPLICATION
-// ============================================
-
 @Composable
 fun UtilityApp() {
 
@@ -123,7 +109,7 @@ fun UtilityApp() {
 
     val totalMillis = selectedMinutes * 60_000L
 
-    // Countdown
+    // Countdown logic
     LaunchedEffect(isRunning, deadlineMillis) {
         if (isRunning) {
             while (true) {
@@ -156,7 +142,6 @@ fun UtilityApp() {
 
             bottomBar = {
                 NavigationBar {
-
                     NavigationBarItem(
                         selected = selectedTab == "Timer",
                         onClick = {
@@ -255,8 +240,7 @@ fun UtilityApp() {
 
                                 if (sessionMode == SessionMode.FOCUS) {
                                     isRunning = false
-                                    remainingMillis =
-                                        newDuration * 60_000L
+                                    remainingMillis = newDuration * 60_000L
                                 }
                             }
                         },
@@ -267,8 +251,7 @@ fun UtilityApp() {
 
                                 if (sessionMode == SessionMode.BREAK) {
                                     isRunning = false
-                                    remainingMillis =
-                                        newDuration * 60_000L
+                                    remainingMillis = newDuration * 60_000L
                                 }
                             }
                         },
@@ -283,10 +266,7 @@ fun UtilityApp() {
     }
 }
 
-// ============================================
 // TIMER SCREEN
-// ============================================
-
 @Composable
 fun UtilityScreen(
     scrollState: ScrollState,
@@ -297,18 +277,15 @@ fun UtilityScreen(
     completedSessions: Int,
     onModeChange: (SessionMode) -> Unit,
     onStartPause: () -> Unit,
-    onReset: () -> Unit,
-    quoteViewModel: QuoteViewModel = viewModel(factory = QuoteViewModel.Factory)
+    onReset: () -> Unit
 ) {
-    val quoteState by quoteViewModel.uiState.collectAsStateWithLifecycle()
     val activity = LocalContext.current as? Activity
 
     var showExitDialog by remember {
         mutableStateOf(false)
     }
 
-    val displaySeconds =
-        (remainingMillis + 999L) / 1000L
+    val displaySeconds = (remainingMillis + 999L) / 1000L
 
     val formattedTime = "%02d:%02d".format(
         displaySeconds / 60L,
@@ -363,35 +340,21 @@ fun UtilityScreen(
             }
         }
 
-        // DAILY MOTIVATION (MOVED TO TOP)
-        DailyMotivationCard(
-            quote = quoteState.quote,
-            author = quoteState.author,
-            isLoading = quoteState.isLoading,
-            error = quoteState.error,
-            onRefresh = { quoteViewModel.fetchQuote() }
-        )
-
-        // FOCUS / BREAK
+        // FOCUS AND BREAK BUTTONS
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-
             if (sessionMode == SessionMode.FOCUS) {
                 Button(
-                    onClick = {
-                        onModeChange(SessionMode.FOCUS)
-                    },
+                    onClick = { onModeChange(SessionMode.FOCUS) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Focus")
                 }
             } else {
                 OutlinedButton(
-                    onClick = {
-                        onModeChange(SessionMode.FOCUS)
-                    },
+                    onClick = { onModeChange(SessionMode.FOCUS) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Focus")
@@ -400,18 +363,14 @@ fun UtilityScreen(
 
             if (sessionMode == SessionMode.BREAK) {
                 Button(
-                    onClick = {
-                        onModeChange(SessionMode.BREAK)
-                    },
+                    onClick = { onModeChange(SessionMode.BREAK) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Break")
                 }
             } else {
                 OutlinedButton(
-                    onClick = {
-                        onModeChange(SessionMode.BREAK)
-                    },
+                    onClick = { onModeChange(SessionMode.BREAK) },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Break")
@@ -437,7 +396,6 @@ fun UtilityScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-
                 Text(
                     text = if (sessionMode == SessionMode.FOCUS) {
                         "FOCUS SESSION"
@@ -452,14 +410,12 @@ fun UtilityScreen(
                     modifier = Modifier.size(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-
                     CircularProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.fillMaxSize(),
                         strokeWidth = 12.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor =
-                            MaterialTheme.colorScheme.surfaceVariant
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
 
                     Column(
@@ -477,10 +433,8 @@ fun UtilityScreen(
                             text = when {
                                 remainingMillis == 0L ->
                                     "Session Complete!"
-
                                 isRunning ->
                                     "Keep Going!"
-
                                 else ->
                                     "Ready to Begin"
                             },
@@ -503,7 +457,7 @@ fun UtilityScreen(
             }
         }
 
-        // TIMER BUTTONS
+        // TIMER CONTROL BUTTONS
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -533,7 +487,7 @@ fun UtilityScreen(
             }
         }
 
-        // SESSION PROGRESS
+        // SESSION PROGRESS CARD
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp)
@@ -565,6 +519,32 @@ fun UtilityScreen(
             }
         }
 
+        // DAILY MOTIVATION CARD
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Daily Motivation",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Text(
+                    text = "Small steps every day lead to big results.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
         // EXIT BUTTON
         OutlinedButton(
             onClick = {
@@ -584,7 +564,7 @@ fun UtilityScreen(
         Spacer(modifier = Modifier.height(16.dp))
     }
 
-    // EXIT CONFIRMATION
+    // EXIT CONFIRMATION DIALOG
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -622,128 +602,7 @@ fun UtilityScreen(
     }
 }
 
-// ============================================
-// DAILY MOTIVATION CARD
-// ============================================
-
-@Composable
-fun DailyMotivationCard(
-    quote: String,
-    author: String,
-    isLoading: Boolean,
-    error: String?,
-    onRefresh: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Header Row: Badge + Title + Refresh Button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                    ) {
-                        Text(
-                            text = "✨",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-
-                    Text(
-                        text = "DAILY MOTIVATION",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        letterSpacing = 1.2.sp
-                    )
-                }
-
-                IconButton(
-                    onClick = onRefresh,
-                    enabled = !isLoading,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Get Another Quote",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-
-            // Quote Text
-            Text(
-                text = "“$quote”",
-                style = MaterialTheme.typography.bodyLarge,
-                fontStyle = FontStyle.Italic,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                lineHeight = 22.sp
-            )
-
-            // Author or Error Row
-            if (error != null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = error,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    TextButton(onClick = onRefresh) {
-                        Text("Retry", style = MaterialTheme.typography.labelMedium)
-                    }
-                }
-            } else {
-                Text(
-                    text = "— $author",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.End)
-                )
-            }
-        }
-    }
-}
-
-// ============================================
-// NEW SETTINGS SCREEN DESIGN
-// ============================================
-
+// SETTINGS SCREEN
 @Composable
 fun SettingsScreen(
     scrollState: ScrollState,
@@ -754,7 +613,6 @@ fun SettingsScreen(
     onBreakChange: (Int) -> Unit,
     onDarkModeChange: (Boolean) -> Unit
 ) {
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -825,7 +683,7 @@ fun SettingsScreen(
             }
         }
 
-        // STUDY DURATION
+        // STUDY DURATION CARD
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -894,7 +752,7 @@ fun SettingsScreen(
             }
         }
 
-        // BREAK DURATION
+        // BREAK DURATION CARD
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -937,7 +795,7 @@ fun SettingsScreen(
             }
         }
 
-        // APPEARANCE
+        // APPEARANCE CARD
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -974,7 +832,7 @@ fun SettingsScreen(
             }
         }
 
-        // SESSION SUMMARY
+        // SESSION SUMMARY CARD
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -1045,17 +903,13 @@ fun SettingsScreen(
     }
 }
 
-// ============================================
 // REUSABLE DURATION BUTTON
-// ============================================
-
 @Composable
 fun DurationOption(
     minutes: Int,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-
     val background = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
