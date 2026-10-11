@@ -29,13 +29,19 @@ import androidx.compose.ui.unit.dp
 import au.edu.jcu.assessment.utilityapp.ui.theme.MobileTech_UtilityAppTheme
 import kotlinx.coroutines.delay
 
+// ============================================
 // SESSION MODES
+// ============================================
+
 enum class SessionMode {
     FOCUS,
     BREAK
 }
 
+// ============================================
 // MAIN ACTIVITY
+// ============================================
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,7 +59,10 @@ fun UtilityAppPreview() {
     UtilityApp()
 }
 
+// ============================================
 // MAIN APPLICATION
+// ============================================
+
 @Composable
 fun UtilityApp() {
 
@@ -109,7 +118,7 @@ fun UtilityApp() {
 
     val totalMillis = selectedMinutes * 60_000L
 
-    // Countdown logic
+    // Countdown
     LaunchedEffect(isRunning, deadlineMillis) {
         if (isRunning) {
             while (true) {
@@ -142,6 +151,7 @@ fun UtilityApp() {
 
             bottomBar = {
                 NavigationBar {
+
                     NavigationBarItem(
                         selected = selectedTab == "Timer",
                         onClick = {
@@ -240,7 +250,8 @@ fun UtilityApp() {
 
                                 if (sessionMode == SessionMode.FOCUS) {
                                     isRunning = false
-                                    remainingMillis = newDuration * 60_000L
+                                    remainingMillis =
+                                        newDuration * 60_000L
                                 }
                             }
                         },
@@ -251,7 +262,8 @@ fun UtilityApp() {
 
                                 if (sessionMode == SessionMode.BREAK) {
                                     isRunning = false
-                                    remainingMillis = newDuration * 60_000L
+                                    remainingMillis =
+                                        newDuration * 60_000L
                                 }
                             }
                         },
@@ -266,7 +278,10 @@ fun UtilityApp() {
     }
 }
 
+// ============================================
 // TIMER SCREEN
+// ============================================
+
 @Composable
 fun UtilityScreen(
     scrollState: ScrollState,
@@ -279,13 +294,15 @@ fun UtilityScreen(
     onStartPause: () -> Unit,
     onReset: () -> Unit
 ) {
+
     val activity = LocalContext.current as? Activity
 
     var showExitDialog by remember {
         mutableStateOf(false)
     }
 
-    val displaySeconds = (remainingMillis + 999L) / 1000L
+    val displaySeconds =
+        (remainingMillis + 999L) / 1000L
 
     val formattedTime = "%02d:%02d".format(
         displaySeconds / 60L,
@@ -340,21 +357,26 @@ fun UtilityScreen(
             }
         }
 
-        // FOCUS AND BREAK BUTTONS
+        // FOCUS / BREAK
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             if (sessionMode == SessionMode.FOCUS) {
                 Button(
-                    onClick = { onModeChange(SessionMode.FOCUS) },
+                    onClick = {
+                        onModeChange(SessionMode.FOCUS)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Focus")
                 }
             } else {
                 OutlinedButton(
-                    onClick = { onModeChange(SessionMode.FOCUS) },
+                    onClick = {
+                        onModeChange(SessionMode.FOCUS)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Focus")
@@ -363,14 +385,18 @@ fun UtilityScreen(
 
             if (sessionMode == SessionMode.BREAK) {
                 Button(
-                    onClick = { onModeChange(SessionMode.BREAK) },
+                    onClick = {
+                        onModeChange(SessionMode.BREAK)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Break")
                 }
             } else {
                 OutlinedButton(
-                    onClick = { onModeChange(SessionMode.BREAK) },
+                    onClick = {
+                        onModeChange(SessionMode.BREAK)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Break")
@@ -396,6 +422,7 @@ fun UtilityScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
+
                 Text(
                     text = if (sessionMode == SessionMode.FOCUS) {
                         "FOCUS SESSION"
@@ -410,12 +437,14 @@ fun UtilityScreen(
                     modifier = Modifier.size(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
+
                     CircularProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.fillMaxSize(),
                         strokeWidth = 12.dp,
                         color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        trackColor =
+                            MaterialTheme.colorScheme.surfaceVariant
                     )
 
                     Column(
@@ -433,8 +462,10 @@ fun UtilityScreen(
                             text = when {
                                 remainingMillis == 0L ->
                                     "Session Complete!"
+
                                 isRunning ->
                                     "Keep Going!"
+
                                 else ->
                                     "Ready to Begin"
                             },
@@ -457,7 +488,7 @@ fun UtilityScreen(
             }
         }
 
-        // TIMER CONTROL BUTTONS
+        // TIMER BUTTONS
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -487,7 +518,7 @@ fun UtilityScreen(
             }
         }
 
-        // SESSION PROGRESS CARD
+        // SESSION PROGRESS
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp)
@@ -519,7 +550,7 @@ fun UtilityScreen(
             }
         }
 
-        // DAILY MOTIVATION CARD
+        // DAILY MOTIVATION
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -564,7 +595,7 @@ fun UtilityScreen(
         Spacer(modifier = Modifier.height(16.dp))
     }
 
-    // EXIT CONFIRMATION DIALOG
+    // EXIT CONFIRMATION
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = {
@@ -602,7 +633,10 @@ fun UtilityScreen(
     }
 }
 
-// SETTINGS SCREEN
+// ============================================
+// NEW SETTINGS SCREEN DESIGN
+// ============================================
+
 @Composable
 fun SettingsScreen(
     scrollState: ScrollState,
@@ -613,6 +647,7 @@ fun SettingsScreen(
     onBreakChange: (Int) -> Unit,
     onDarkModeChange: (Boolean) -> Unit
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -683,7 +718,7 @@ fun SettingsScreen(
             }
         }
 
-        // STUDY DURATION CARD
+        // STUDY DURATION
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -752,7 +787,7 @@ fun SettingsScreen(
             }
         }
 
-        // BREAK DURATION CARD
+        // BREAK DURATION
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -795,7 +830,7 @@ fun SettingsScreen(
             }
         }
 
-        // APPEARANCE CARD
+        // APPEARANCE
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -832,7 +867,7 @@ fun SettingsScreen(
             }
         }
 
-        // SESSION SUMMARY CARD
+        // SESSION SUMMARY
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -903,13 +938,17 @@ fun SettingsScreen(
     }
 }
 
+// ============================================
 // REUSABLE DURATION BUTTON
+// ============================================
+
 @Composable
 fun DurationOption(
     minutes: Int,
     selected: Boolean,
     onClick: () -> Unit
 ) {
+
     val background = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
