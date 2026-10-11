@@ -7,6 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,29 +22,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            UtilityApp()
-        }
+        setContent { UtilityApp() }
     }
 }
 
 @Composable
 fun UtilityApp() {
-    var sessionMode by remember {
-        mutableStateOf("Focus")
-    }
-
-    var remainingMillis by remember {
-        mutableLongStateOf(25L * 60_000L)
-    }
-
-    var isRunning by remember {
-        mutableStateOf(false)
-    }
-
-    var deadlineMillis by remember {
-        mutableLongStateOf(0L)
-    }
+    var selectedTab by remember { mutableStateOf("Timer") }
+    var sessionMode by remember { mutableStateOf("Focus") }
+    var remainingMillis by remember { mutableLongStateOf(25L * 60_000L) }
+    var isRunning by remember { mutableStateOf(false) }
+    var deadlineMillis by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(isRunning, deadlineMillis) {
         if (isRunning) {
@@ -56,7 +47,6 @@ fun UtilityApp() {
                     isRunning = false
                     break
                 }
-
                 delay(100L)
             }
         }
@@ -66,39 +56,78 @@ fun UtilityApp() {
         (if (sessionMode == "Focus") 25 else 5) * 60_000L
 
     MobileTech_UtilityAppTheme {
-        TimerScreen(
-            remainingMillis = remainingMillis,
-            isRunning = isRunning,
-            sessionMode = sessionMode,
+        Scaffold(
+            bottomBar = {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = selectedTab == "Timer",
+                        onClick = { selectedTab = "Timer" },
+                        icon = {
+                            Icon(
+                                Icons.Default.Home,
+                                contentDescription = "Timer"
+                            )
+                        },
+                        label = { Text("Timer") }
+                    )
 
-            onModeChange = { mode ->
-                sessionMode = mode
-                isRunning = false
-
-                remainingMillis =
-                    (if (mode == "Focus") 25 else 5) * 60_000L
-            },
-
-            onStartPause = {
-                if (isRunning) {
-                    remainingMillis = (
-                            deadlineMillis - SystemClock.elapsedRealtime()
-                            ).coerceAtLeast(0L)
-
-                    isRunning = false
-                } else if (remainingMillis > 0L) {
-                    deadlineMillis =
-                        SystemClock.elapsedRealtime() + remainingMillis
-
-                    isRunning = true
+                    NavigationBarItem(
+                        selected = selectedTab == "Settings",
+                        onClick = { selectedTab = "Settings" },
+                        icon = {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = "Settings"
+                            )
+                        },
+                        label = { Text("Settings") }
+                    )
                 }
-            },
-
-            onReset = {
-                isRunning = false
-                remainingMillis = totalMillis
             }
-        )
+        ) { innerPadding ->
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                if (selectedTab == "Timer") {
+                    TimerScreen(
+                        remainingMillis = remainingMillis,
+                        isRunning = isRunning,
+                        sessionMode = sessionMode,
+
+                        onModeChange = { mode ->
+                            sessionMode = mode
+                            isRunning = false
+                            remainingMillis =
+                                (if (mode == "Focus") 25 else 5) * 60_000L
+                        },
+
+                        onStartPause = {
+                            if (isRunning) {
+                                remainingMillis = (
+                                        deadlineMillis -
+                                                SystemClock.elapsedRealtime()
+                                        ).coerceAtLeast(0L)
+                                isRunning = false
+                            } else if (remainingMillis > 0L) {
+                                deadlineMillis =
+                                    SystemClock.elapsedRealtime() +
+                                            remainingMillis
+                                isRunning = true
+                            }
+                        },
+
+                        onReset = {
+                            isRunning = false
+                            remainingMillis = totalMillis
+                        }
+                    )
+                } else {
+                    SettingsScreen()
+                }
+            }
+        }
     }
 }
 
@@ -112,7 +141,6 @@ fun TimerScreen(
     onReset: () -> Unit
 ) {
     val displaySeconds = (remainingMillis + 999L) / 1000L
-
     val formattedTime = "%02d:%02d".format(
         displaySeconds / 60,
         displaySeconds % 60
@@ -132,22 +160,17 @@ fun TimerScreen(
 
         Text("Make every minute count.")
 
-        // Focus and Break buttons
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Button(
-                onClick = { onModeChange("Focus") }
-            ) {
+            Button(onClick = { onModeChange("Focus") }) {
                 Text(
                     if (sessionMode == "Focus") "✓ Focus"
                     else "Focus"
                 )
             }
 
-            Button(
-                onClick = { onModeChange("Break") }
-            ) {
+            Button(onClick = { onModeChange("Break") }) {
                 Text(
                     if (sessionMode == "Break") "✓ Break"
                     else "Break"
@@ -201,5 +224,23 @@ fun TimerScreen(
         }
 
         Text("Small steps every day lead to big results.")
+    }
+}
+
+@Composable
+fun SettingsScreen() {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        Text(
+            "Settings",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Text("Personalize your focus experience")
+
+        Text("Duration controls coming next")
     }
 }
