@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
@@ -16,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import au.edu.jcu.assessment.utilityapp.ui.theme.MobileTech_UtilityAppTheme
 import kotlinx.coroutines.delay
@@ -37,6 +39,7 @@ fun UtilityApp() {
     var remainingMillis by remember { mutableLongStateOf(25L * 60_000L) }
     var isRunning by remember { mutableStateOf(false) }
     var deadlineMillis by remember { mutableLongStateOf(0L) }
+    var completedSessions by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(isRunning, deadlineMillis) {
         if (isRunning) {
@@ -44,19 +47,27 @@ fun UtilityApp() {
                 val left = (
                         deadlineMillis - SystemClock.elapsedRealtime()
                         ).coerceAtLeast(0L)
+
                 remainingMillis = left
 
                 if (left == 0L) {
                     isRunning = false
+
+                    if (sessionMode == "Focus") {
+                        completedSessions++
+                    }
                     break
                 }
+
                 delay(100L)
             }
         }
     }
 
-    val totalMillis =
-        (if (sessionMode == "Focus") focusMinutes else breakMinutes) * 60_000L
+    val totalMillis = (
+            if (sessionMode == "Focus") focusMinutes
+            else breakMinutes
+            ) * 60_000L
 
     MobileTech_UtilityAppTheme {
         Scaffold(
@@ -98,10 +109,13 @@ fun UtilityApp() {
                         remainingMillis = remainingMillis,
                         isRunning = isRunning,
                         sessionMode = sessionMode,
+                        totalMillis = totalMillis,
+                        completedSessions = completedSessions,
 
                         onModeChange = { mode ->
                             sessionMode = mode
                             isRunning = false
+
                             remainingMillis = (
                                     if (mode == "Focus") focusMinutes
                                     else breakMinutes
@@ -114,11 +128,13 @@ fun UtilityApp() {
                                         deadlineMillis -
                                                 SystemClock.elapsedRealtime()
                                         ).coerceAtLeast(0L)
+
                                 isRunning = false
                             } else if (remainingMillis > 0L) {
                                 deadlineMillis =
                                     SystemClock.elapsedRealtime() +
                                             remainingMillis
+
                                 isRunning = true
                             }
                         },
@@ -163,6 +179,8 @@ fun TimerScreen(
     isRunning: Boolean,
     sessionMode: String,
     onModeChange: (String) -> Unit,
+    totalMillis: Long,
+    completedSessions: Int,
     onStartPause: () -> Unit,
     onReset: () -> Unit
 ) {
@@ -173,9 +191,17 @@ fun TimerScreen(
         displaySeconds % 60
     )
 
+    val progress = if (totalMillis > 0L) {
+        (remainingMillis.toFloat() / totalMillis.toFloat())
+            .coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -187,7 +213,9 @@ fun TimerScreen(
 
         Text("Make every minute count.")
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Button(onClick = { onModeChange("Focus") }) {
                 Text(
                     if (sessionMode == "Focus") "✓ Focus"
@@ -203,7 +231,10 @@ fun TimerScreen(
             }
         }
 
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp)
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -218,10 +249,23 @@ fun TimerScreen(
                         "BREAK SESSION"
                 )
 
-                Text(
-                    formattedTime,
-                    style = MaterialTheme.typography.displayLarge
-                )
+                // Circular progress timer
+                Box(
+                    modifier = Modifier.size(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.fillMaxSize(),
+                        strokeWidth = 12.dp
+                    )
+
+                    Text(
+                        text = formattedTime,
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
                 Text(
                     when {
@@ -233,7 +277,9 @@ fun TimerScreen(
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Button(
                 onClick = onStartPause,
                 enabled = remainingMillis > 0L
@@ -243,6 +289,20 @@ fun TimerScreen(
 
             OutlinedButton(onClick = onReset) {
                 Text("Reset")
+            }
+        }
+
+        // Completed focus sessions
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(20.dp)
+            ) {
+                Text(
+                    "Session Progress",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Text("$completedSessions completed focus sessions")
             }
         }
 
