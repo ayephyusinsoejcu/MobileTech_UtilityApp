@@ -1,9 +1,7 @@
-
 package au.edu.jcu.assessment.utilityapp
 
 import android.app.Activity
 import android.os.Bundle
-import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -15,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,21 +21,33 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import au.edu.jcu.assessment.utilityapp.ui.theme.MobileTech_UtilityAppTheme
-import kotlinx.coroutines.delay
+import au.edu.jcu.assessment.utilityapp.viewmodel.QuoteViewModel
+import au.edu.jcu.assessment.utilityapp.viewmodel.TimerViewModel
 
+// ============================================
 // SESSION MODES
+// ============================================
+
 enum class SessionMode {
     FOCUS,
     BREAK
 }
 
+// ============================================
 // MAIN ACTIVITY
+// ============================================
+
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -47,101 +58,47 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// ============================================
+// APP PREVIEW
+// ============================================
+
 @Preview(showBackground = true)
 @Composable
 fun UtilityAppPreview() {
     UtilityApp()
 }
 
+// ============================================
 // MAIN APPLICATION
-@Composable
-fun UtilityApp() {
+// ============================================
 
-    // Navigation
+@Composable
+fun UtilityApp(
+    timerViewModel: TimerViewModel = viewModel()
+) {
+
     var selectedTab by rememberSaveable {
         mutableStateOf("Timer")
     }
 
-    // Settings
-    var focusMinutes by rememberSaveable {
-        mutableIntStateOf(25)
-    }
+    val uiState by timerViewModel.uiState
+        .collectAsStateWithLifecycle()
 
-    var breakMinutes by rememberSaveable {
-        mutableIntStateOf(5)
-    }
-
-    var darkMode by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    // Timer state
-    var sessionMode by rememberSaveable {
-        mutableStateOf(SessionMode.FOCUS)
-    }
-
-    var remainingMillis by rememberSaveable {
-        mutableLongStateOf(25L * 60_000L)
-    }
-
-    var isRunning by rememberSaveable {
-        mutableStateOf(false)
-    }
-
-    var deadlineMillis by rememberSaveable {
-        mutableLongStateOf(0L)
-    }
-
-    var completedSessions by rememberSaveable {
-        mutableIntStateOf(0)
-    }
-
-    // Scroll positions
     val timerScrollState = rememberScrollState()
     val settingsScrollState = rememberScrollState()
 
-    val selectedMinutes =
-        if (sessionMode == SessionMode.FOCUS) {
-            focusMinutes
-        } else {
-            breakMinutes
-        }
-
-    val totalMillis = selectedMinutes * 60_000L
-
-    // Countdown logic
-    LaunchedEffect(isRunning, deadlineMillis) {
-        if (isRunning) {
-            while (true) {
-                val timeLeft = (
-                        deadlineMillis -
-                                SystemClock.elapsedRealtime()
-                        ).coerceAtLeast(0L)
-
-                remainingMillis = timeLeft
-
-                if (timeLeft == 0L) {
-                    isRunning = false
-
-                    if (sessionMode == SessionMode.FOCUS) {
-                        completedSessions++
-                    }
-                    break
-                }
-
-                delay(100L)
-            }
-        }
-    }
-
-    MobileTech_UtilityAppTheme(darkTheme = darkMode) {
+    MobileTech_UtilityAppTheme(
+        darkTheme = uiState.darkMode
+    ) {
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background,
 
             bottomBar = {
+
                 NavigationBar {
+
                     NavigationBarItem(
                         selected = selectedTab == "Timer",
                         onClick = {
@@ -149,11 +106,13 @@ fun UtilityApp() {
                         },
                         icon = {
                             Icon(
-                                Icons.Default.Home,
+                                imageVector = Icons.Default.Home,
                                 contentDescription = "Timer"
                             )
                         },
-                        label = { Text("Timer") }
+                        label = {
+                            Text("Timer")
+                        }
                     )
 
                     NavigationBarItem(
@@ -163,14 +122,17 @@ fun UtilityApp() {
                         },
                         icon = {
                             Icon(
-                                Icons.Default.Settings,
+                                imageVector = Icons.Default.Settings,
                                 contentDescription = "Settings"
                             )
                         },
-                        label = { Text("Settings") }
+                        label = {
+                            Text("Settings")
+                        }
                     )
                 }
             }
+
         ) { innerPadding ->
 
             Box(
@@ -178,95 +140,64 @@ fun UtilityApp() {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
+
                 when (selectedTab) {
 
-                    "Timer" -> UtilityScreen(
-                        scrollState = timerScrollState,
-                        sessionMode = sessionMode,
-                        remainingMillis = remainingMillis,
-                        totalMillis = totalMillis,
-                        isRunning = isRunning,
-                        completedSessions = completedSessions,
+                    "Timer" -> {
 
-                        onModeChange = { newMode ->
-                            if (newMode != sessionMode) {
-                                isRunning = false
-                                sessionMode = newMode
+                        UtilityScreen(
+                            scrollState = timerScrollState,
+                            sessionMode = uiState.sessionMode,
+                            remainingMillis = uiState.remainingMillis,
+                            totalMillis = uiState.totalMillis,
+                            isRunning = uiState.isRunning,
+                            completedSessions = uiState.completedSessions,
 
-                                val duration =
-                                    if (newMode == SessionMode.FOCUS) {
-                                        focusMinutes
-                                    } else {
-                                        breakMinutes
-                                    }
+                            onModeChange = { newMode ->
+                                timerViewModel.changeSessionMode(newMode)
+                            },
 
-                                remainingMillis = duration * 60_000L
+                            onStartPause = {
+                                timerViewModel.startPauseTimer()
+                            },
+
+                            onReset = {
+                                timerViewModel.resetTimer()
                             }
-                        },
+                        )
+                    }
 
-                        onStartPause = {
-                            if (isRunning) {
-                                remainingMillis = (
-                                        deadlineMillis -
-                                                SystemClock.elapsedRealtime()
-                                        ).coerceAtLeast(0L)
+                    "Settings" -> {
 
-                                isRunning = false
+                        SettingsScreen(
+                            scrollState = settingsScrollState,
+                            focusMinutes = uiState.focusMinutes,
+                            breakMinutes = uiState.breakMinutes,
+                            darkMode = uiState.darkMode,
 
-                            } else if (remainingMillis > 0L) {
-                                deadlineMillis =
-                                    SystemClock.elapsedRealtime() +
-                                            remainingMillis
+                            onFocusChange = { newDuration ->
+                                timerViewModel.updateFocusDuration(newDuration)
+                            },
 
-                                isRunning = true
+                            onBreakChange = { newDuration ->
+                                timerViewModel.updateBreakDuration(newDuration)
+                            },
+
+                            onDarkModeChange = { enabled ->
+                                timerViewModel.updateDarkMode(enabled)
                             }
-                        },
-
-                        onReset = {
-                            isRunning = false
-                            remainingMillis = totalMillis
-                        }
-                    )
-
-                    "Settings" -> SettingsScreen(
-                        scrollState = settingsScrollState,
-                        focusMinutes = focusMinutes,
-                        breakMinutes = breakMinutes,
-                        darkMode = darkMode,
-
-                        onFocusChange = { newDuration ->
-                            if (focusMinutes != newDuration) {
-                                focusMinutes = newDuration
-
-                                if (sessionMode == SessionMode.FOCUS) {
-                                    isRunning = false
-                                    remainingMillis = newDuration * 60_000L
-                                }
-                            }
-                        },
-
-                        onBreakChange = { newDuration ->
-                            if (breakMinutes != newDuration) {
-                                breakMinutes = newDuration
-
-                                if (sessionMode == SessionMode.BREAK) {
-                                    isRunning = false
-                                    remainingMillis = newDuration * 60_000L
-                                }
-                            }
-                        },
-
-                        onDarkModeChange = { enabled ->
-                            darkMode = enabled
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+// ============================================
 // TIMER SCREEN
+// ============================================
+
 @Composable
 fun UtilityScreen(
     scrollState: ScrollState,
@@ -277,13 +208,18 @@ fun UtilityScreen(
     completedSessions: Int,
     onModeChange: (SessionMode) -> Unit,
     onStartPause: () -> Unit,
-    onReset: () -> Unit
+    onReset: () -> Unit,
+    quoteViewModel: QuoteViewModel = viewModel(factory = QuoteViewModel.Factory)
 ) {
+
     val activity = LocalContext.current as? Activity
 
     var showExitDialog by remember {
         mutableStateOf(false)
     }
+
+    val quoteState by quoteViewModel.uiState
+        .collectAsStateWithLifecycle()
 
     val displaySeconds = (remainingMillis + 999L) / 1000L
 
@@ -313,7 +249,9 @@ fun UtilityScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Column {
+
                 Text(
                     text = "StudyFlow",
                     style = MaterialTheme.typography.headlineMedium,
@@ -331,6 +269,7 @@ fun UtilityScreen(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
+
                 Text(
                     text = "SF",
                     modifier = Modifier.padding(14.dp),
@@ -340,21 +279,38 @@ fun UtilityScreen(
             }
         }
 
-        // FOCUS AND BREAK BUTTONS
+        // DAILY MOTIVATION (MOVED TO TOP)
+        DailyMotivationCard(
+            quote = quoteState.quote,
+            author = quoteState.author,
+            isLoading = quoteState.isLoading,
+            error = quoteState.error,
+            onRefresh = { quoteViewModel.fetchQuote() }
+        )
+
+        // FOCUS / BREAK SELECTION
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             if (sessionMode == SessionMode.FOCUS) {
+
                 Button(
-                    onClick = { onModeChange(SessionMode.FOCUS) },
+                    onClick = {
+                        onModeChange(SessionMode.FOCUS)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Focus")
                 }
+
             } else {
+
                 OutlinedButton(
-                    onClick = { onModeChange(SessionMode.FOCUS) },
+                    onClick = {
+                        onModeChange(SessionMode.FOCUS)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Focus")
@@ -362,15 +318,22 @@ fun UtilityScreen(
             }
 
             if (sessionMode == SessionMode.BREAK) {
+
                 Button(
-                    onClick = { onModeChange(SessionMode.BREAK) },
+                    onClick = {
+                        onModeChange(SessionMode.BREAK)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Break")
                 }
+
             } else {
+
                 OutlinedButton(
-                    onClick = { onModeChange(SessionMode.BREAK) },
+                    onClick = {
+                        onModeChange(SessionMode.BREAK)
+                    },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Break")
@@ -382,13 +345,16 @@ fun UtilityScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(28.dp),
+
             elevation = CardDefaults.cardElevation(
                 defaultElevation = 4.dp
             ),
+
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         ) {
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -396,6 +362,7 @@ fun UtilityScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
+
                 Text(
                     text = if (sessionMode == SessionMode.FOCUS) {
                         "FOCUS SESSION"
@@ -410,6 +377,7 @@ fun UtilityScreen(
                     modifier = Modifier.size(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
+
                     CircularProgressIndicator(
                         progress = { progress },
                         modifier = Modifier.fillMaxSize(),
@@ -422,6 +390,7 @@ fun UtilityScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+
                         Text(
                             text = formattedTime,
                             style = MaterialTheme.typography.headlineLarge,
@@ -431,12 +400,9 @@ fun UtilityScreen(
 
                         Text(
                             text = when {
-                                remainingMillis == 0L ->
-                                    "Session Complete!"
-                                isRunning ->
-                                    "Keep Going!"
-                                else ->
-                                    "Ready to Begin"
+                                remainingMillis == 0L -> "Session Complete!"
+                                isRunning -> "Keep Going!"
+                                else -> "Ready to Begin"
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -462,6 +428,7 @@ fun UtilityScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             Button(
                 onClick = onStartPause,
                 enabled = remainingMillis > 0L,
@@ -470,6 +437,7 @@ fun UtilityScreen(
                     .height(54.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
+
                 Text(
                     text = if (isRunning) "Pause" else "Start",
                     fontWeight = FontWeight.SemiBold
@@ -487,15 +455,17 @@ fun UtilityScreen(
             }
         }
 
-        // SESSION PROGRESS CARD
+        // SESSION PROGRESS
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp)
         ) {
+
             Column(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+
                 Text(
                     text = "Session Progress",
                     style = MaterialTheme.typography.titleMedium,
@@ -519,32 +489,6 @@ fun UtilityScreen(
             }
         }
 
-        // DAILY MOTIVATION CARD
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Daily Motivation",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-
-                Text(
-                    text = "Small steps every day lead to big results.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
-
         // EXIT BUTTON
         OutlinedButton(
             onClick = {
@@ -558,43 +502,55 @@ fun UtilityScreen(
                 contentColor = MaterialTheme.colorScheme.error
             )
         ) {
+
             Text("Exit App")
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
     }
 
     // EXIT CONFIRMATION DIALOG
     if (showExitDialog) {
+
         AlertDialog(
             onDismissRequest = {
                 showExitDialog = false
             },
+
             title = {
                 Text("Exit StudyFlow?")
             },
+
             text = {
                 Text(
                     "Are you sure you want to exit? " +
                             "Your current study session will end."
                 )
             },
+
             confirmButton = {
+
                 TextButton(
                     onClick = {
                         showExitDialog = false
                         activity?.finish()
                     }
                 ) {
+
                     Text("Exit")
                 }
             },
+
             dismissButton = {
+
                 TextButton(
                     onClick = {
                         showExitDialog = false
                     }
                 ) {
+
                     Text("Cancel")
                 }
             }
@@ -602,7 +558,128 @@ fun UtilityScreen(
     }
 }
 
+// ============================================
+// DAILY MOTIVATION CARD
+// ============================================
+
+@Composable
+fun DailyMotivationCard(
+    quote: String,
+    author: String,
+    isLoading: Boolean,
+    error: String?,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Header Row: Badge + Title + Refresh Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = "✨",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+
+                    Text(
+                        text = "DAILY MOTIVATION",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        letterSpacing = 1.2.sp
+                    )
+                }
+
+                IconButton(
+                    onClick = onRefresh,
+                    enabled = !isLoading,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Get Another Quote",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            // Quote Text
+            Text(
+                text = "“$quote”",
+                style = MaterialTheme.typography.bodyLarge,
+                fontStyle = FontStyle.Italic,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                lineHeight = 22.sp
+            )
+
+            // Author or Error Row
+            if (error != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    TextButton(onClick = onRefresh) {
+                        Text("Retry", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            } else {
+                Text(
+                    text = "— $author",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.End)
+                )
+            }
+        }
+    }
+}
+
+// ============================================
 // SETTINGS SCREEN
+// ============================================
+
 @Composable
 fun SettingsScreen(
     scrollState: ScrollState,
@@ -613,6 +690,7 @@ fun SettingsScreen(
     onBreakChange: (Int) -> Unit,
     onDarkModeChange: (Boolean) -> Unit
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -627,7 +705,9 @@ fun SettingsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Column {
+
                 Text(
                     text = "Settings",
                     style = MaterialTheme.typography.headlineMedium,
@@ -645,6 +725,7 @@ fun SettingsScreen(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
+
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = null,
@@ -662,12 +743,14 @@ fun SettingsScreen(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
         ) {
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+
                 Text(
                     text = "Your focus, your pace",
                     style = MaterialTheme.typography.titleMedium,
@@ -683,7 +766,7 @@ fun SettingsScreen(
             }
         }
 
-        // STUDY DURATION CARD
+        // STUDY DURATION
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -691,10 +774,12 @@ fun SettingsScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         ) {
+
             Column(
                 modifier = Modifier.padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+
                 Text(
                     text = "Study duration",
                     style = MaterialTheme.typography.titleLarge,
@@ -711,8 +796,13 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+
                     listOf(15, 25, 30).forEach { minutes ->
-                        Box(modifier = Modifier.weight(1f)) {
+
+                        Box(
+                            modifier = Modifier.weight(1f)
+                        ) {
+
                             DurationOption(
                                 minutes = minutes,
                                 selected = focusMinutes == minutes,
@@ -728,8 +818,13 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+
                     listOf(45, 60).forEach { minutes ->
-                        Box(modifier = Modifier.weight(1f)) {
+
+                        Box(
+                            modifier = Modifier.weight(1f)
+                        ) {
+
                             DurationOption(
                                 minutes = minutes,
                                 selected = focusMinutes == minutes,
@@ -740,7 +835,9 @@ fun SettingsScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 Text(
@@ -752,7 +849,7 @@ fun SettingsScreen(
             }
         }
 
-        // BREAK DURATION CARD
+        // BREAK DURATION
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -760,10 +857,12 @@ fun SettingsScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         ) {
+
             Column(
                 modifier = Modifier.padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+
                 Text(
                     text = "Break duration",
                     style = MaterialTheme.typography.titleLarge,
@@ -780,8 +879,13 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+
                     listOf(5, 10, 15).forEach { minutes ->
-                        Box(modifier = Modifier.weight(1f)) {
+
+                        Box(
+                            modifier = Modifier.weight(1f)
+                        ) {
+
                             DurationOption(
                                 minutes = minutes,
                                 selected = breakMinutes == minutes,
@@ -795,7 +899,7 @@ fun SettingsScreen(
             }
         }
 
-        // APPEARANCE CARD
+        // APPEARANCE
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -803,15 +907,18 @@ fun SettingsScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             )
         ) {
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
+
                     Text(
                         text = "Dark mode",
                         style = MaterialTheme.typography.titleMedium,
@@ -832,7 +939,7 @@ fun SettingsScreen(
             }
         }
 
-        // SESSION SUMMARY CARD
+        // SESSION SUMMARY
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -840,12 +947,14 @@ fun SettingsScreen(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
         ) {
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+
                 Text(
                     text = "Your session setup",
                     style = MaterialTheme.typography.titleMedium,
@@ -856,9 +965,11 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth()
                 ) {
+
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
+
                         Text(
                             text = "$focusMinutes min",
                             style = MaterialTheme.typography.headlineMedium,
@@ -876,6 +987,7 @@ fun SettingsScreen(
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
+
                         Text(
                             text = "$breakMinutes min",
                             style = MaterialTheme.typography.headlineMedium,
@@ -899,17 +1011,23 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
     }
 }
 
-// REUSABLE DURATION BUTTON
+// ============================================
+// REUSABLE DURATION OPTION
+// ============================================
+
 @Composable
 fun DurationOption(
     minutes: Int,
     selected: Boolean,
     onClick: () -> Unit
 ) {
+
     val background = if (selected) {
         MaterialTheme.colorScheme.primary
     } else {
@@ -928,6 +1046,7 @@ fun DurationOption(
         shape = RoundedCornerShape(14.dp),
         color = background
     ) {
+
         Column(
             modifier = Modifier.padding(
                 horizontal = 4.dp,
@@ -936,6 +1055,7 @@ fun DurationOption(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+
             Text(
                 text = "$minutes min",
                 style = MaterialTheme.typography.bodyMedium,
@@ -944,6 +1064,7 @@ fun DurationOption(
             )
 
             if (selected) {
+
                 Text(
                     text = "✓",
                     style = MaterialTheme.typography.bodySmall,
