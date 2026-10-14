@@ -1,9 +1,10 @@
+
 package au.edu.jcu.assessment.utilityapp.network
 
 import retrofit2.http.GET
 
 data class Quote(
-    val id: Int = 0,
+    val id: Int,
     val quote: String,
     val author: String
 )
