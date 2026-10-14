@@ -1,3 +1,4 @@
+
 package au.edu.jcu.assessment.utilityapp.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -13,7 +14,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 data class QuoteUiState(
-    val quote: String = "Small steps every day lead to big results.",
+    val quote: String =
+        "Small steps every day lead to big results.",
     val author: String = "StudyFlow",
     val isLoading: Boolean = false,
     val error: String? = null
@@ -79,7 +81,7 @@ class QuoteViewModel(
                     modelClass.isAssignableFrom(
                         QuoteViewModel::class.java
                     )
-                ) { "Unknown ViewModel class: ${modelClass.name}" }
+                )
                 return QuoteViewModel(repository) as T
             }
         }
