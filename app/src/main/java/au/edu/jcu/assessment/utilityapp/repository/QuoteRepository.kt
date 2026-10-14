@@ -1,3 +1,4 @@
+
 package au.edu.jcu.assessment.utilityapp.repository
 
 import au.edu.jcu.assessment.utilityapp.network.Quote
