@@ -1,38 +1,327 @@
 # MobileTech Utility App – StudyFlow
 
-**StudyFlow | A Focused Study Timer and Productivity Utility**
+**StudyFlow: A Smart Study Timer and Productivity Companion**
 
 StudyFlow is an Android utility application developed for **CP3406 / CP5307 Assessment 1: Utility App** at James Cook University Singapore.
 
-The application is designed to support students in managing their study sessions through a simple, intuitive, and distraction-free interface. It combines a customizable countdown timer, focused study and break sessions, progress tracking, and motivational quotes to encourage effective time management and consistent study habits.
+The application is designed to help students improve concentration, manage study sessions, and maintain a balanced study routine. By combining a customizable focus timer, break management, session tracking, academic calendar, and motivational quotes, StudyFlow provides essential productivity tools within a simple and intuitive interface.
 
-Developed using **Kotlin, Jetpack Compose, and Material Design 3**, StudyFlow demonstrates modern Android application development practices, including reactive state management, lifecycle-aware ViewModels, separation of concerns, and external API integration through Retrofit.
+Built using **Kotlin, Jetpack Compose, and Material Design 3**, the application demonstrates modern Android development practices, including lifecycle-aware state management, MVVM architecture, and REST API integration using Retrofit.
+
+The primary objective is to deliver a practical, user-friendly utility that provides relevant information at a glance while minimizing unnecessary user interactions.
 
 ---
 
-## 1. Project Overview
+## Getting Started
 
-### Purpose
+### Prerequisites
+- Android Studio
+- Android SDK
+- Kotlin and Gradle
+- Android Emulator or physical Android device
+- Internet connection for motivational quote retrieval
 
-The primary purpose of StudyFlow is to provide students with a practical time-management utility that presents essential study information at a glance.
+### How to Run
+1. Clone or download this repository.
+2. Open the project in Android Studio.
+3. Allow Gradle to synchronize and install the required dependencies.
+4. Select an Android emulator or connect a physical Android device.
+5. Click **Run** to build and launch the application.
+6. Navigate between the application's screens to explore its functionality.
 
-Students frequently experience difficulties maintaining concentration, managing study duration, and taking appropriate breaks. StudyFlow addresses these challenges by providing a structured approach to study sessions inspired by the Pomodoro Technique.
+---
 
-The application emphasizes three fundamental design objectives:
+## Core Features
 
-- **Simplicity:** Provide an uncluttered interface that prioritizes essential timer functionality.
-- **Usability:** Enable users to manage study sessions through minimal and intuitive interactions.
-- **Personalization:** Allow users to adjust study durations, break intervals, and visual appearance according to their preferences.
+### 1. Focus and Break Timer
+- Provides dedicated Focus and Break modes to support structured study sessions.
+- Uses a default 25-minute focus session and a 5-minute break.
+- Allows users to start, pause, resume, and reset the countdown.
+- Displays remaining time through a clear countdown interface.
+- Includes a circular progress indicator for immediate visual feedback.
+- Uses `SystemClock.elapsedRealtime()` to reduce countdown inaccuracies caused by scheduling delays.
 
-### Target Users
+### 2. Study Session Tracking
+- Automatically records completed focus sessions.
+- Displays the total number of completed sessions.
+- Updates session information dynamically using StateFlow.
+- Encourages consistent study habits through visible progress feedback.
 
-StudyFlow is primarily designed for university students and independent learners who require a lightweight productivity tool to organize individual study sessions.
+### 3. Academic Calendar
+- Provides a dedicated calendar interface for viewing academic information.
+- Organizes calendar content using structured event data.
+- Uses visual event categories to distinguish different academic activities.
+- Helps students view relevant academic dates alongside their productivity tools.
 
-### Core Objectives
+### 4. Daily Motivation
+- Retrieves motivational quotes from the DummyJSON REST API.
+- Displays motivational messages and their authors.
+- Allows users to refresh the displayed quote.
+- Provides loading and error feedback during network requests.
+- Includes default motivational content when an external quote cannot be retrieved.
 
-1. Develop a functional Android utility application using Kotlin and modern Android APIs.
-2. Implement a responsive and visually consistent user interface using Jetpack Compose and Material Design 3.
-3. Apply the Model-View-ViewModel (MVVM) architectural approach to separate UI components from application logic.
+### 5. Customizable Settings
+- Allows users to adjust focus and break durations.
+- Provides a dark mode option for different viewing preferences.
+- Applies relevant duration changes to the timer.
+- Maintains settings through the ViewModel during the active application lifecycle.
+
+### 6. Intuitive User Interface
+- Implements Material Design 3 components.
+- Provides navigation between the application's main sections.
+- Uses Cards, Buttons, and progress indicators to establish a clear visual hierarchy.
+- Supports light and dark appearance.
+- Prioritizes essential information and straightforward interactions.
+
+---
+
+## Composables
+
+### UtilityApp()
+- Acts as the primary application interface.
+- Uses Scaffold to organize application content and navigation.
+- Coordinates the main screen layout.
+- Observes application state through lifecycle-aware state collection.
+- Applies the selected Material Design theme.
+
+### UtilityScreen()
+- Displays the primary study timer interface.
+- Provides Focus and Break session controls.
+- Shows remaining time and countdown progress.
+- Includes Start, Pause, and Reset functionality.
+- Displays completed study sessions and motivational content.
+
+### CalendarScreen()
+- Displays the academic calendar interface.
+- Presents academic events and related information.
+- Uses structured calendar data to organize the displayed content.
+
+### SettingsScreen()
+- Provides configuration options for focus and break durations.
+- Includes the dark mode preference.
+- Sends user-selected settings to the TimerViewModel.
+- Keeps the settings interface consistent with the main application design.
+
+### DailyMotivationCard()
+- Displays motivational quotes obtained through the API.
+- Presents author information.
+- Handles loading and error states.
+- Allows users to request another motivational quote.
+
+### DurationOption()
+- Provides selectable timer duration options.
+- Highlights the selected duration.
+- Supports reusable and consistent settings controls.
+
+---
+
+## Application Architecture
+
+StudyFlow follows an **MVVM (Model-View-ViewModel) architecture**, supported by a Repository pattern to separate interface presentation, application state, business logic, and network operations.
+
+### TimerViewModel
+- Manages countdown execution and timer state.
+- Controls Focus and Break session modes.
+- Handles timer operations and duration settings.
+- Tracks completed focus sessions.
+- Maintains dark mode preferences.
+- Exposes immutable UI state through StateFlow.
+
+### QuoteViewModel
+- Manages motivational quote retrieval.
+- Coordinates requests through QuoteRepository.
+- Maintains loading, success, and error states.
+- Exposes quote information to the Compose interface.
+
+### QuoteRepository
+- Separates external data retrieval from presentation logic.
+- Communicates with QuoteApiService.
+- Provides a dedicated data access layer for motivational quotes.
+
+### QuoteApiService
+- Defines the external REST API endpoint.
+- Uses Retrofit to perform HTTP requests.
+- Uses Gson Converter to deserialize JSON responses into Kotlin data objects.
+
+### State Management
+- Uses `MutableStateFlow` for internal state updates.
+- Exposes state through `StateFlow`.
+- Uses `collectAsStateWithLifecycle()` to observe state in Compose.
+- Uses Kotlin Coroutines for asynchronous operations.
+
+This architecture improves code organization, supports separation of concerns, and makes the application easier to maintain and extend.
+
+---
+
+## API Integration
+
+StudyFlow integrates an external REST API to enhance its utility beyond local timer functionality.
+
+**API Provider:** DummyJSON
+
+**API Endpoint:** `https://dummyjson.com/quotes/random`
+
+**HTTP Method:** GET
+
+**Implementation:**
+- Retrofit handles communication with the external API.
+- Gson Converter transforms JSON responses into Kotlin objects.
+- QuoteRepository manages the data request.
+- QuoteViewModel coordinates API results and interface state.
+- The UI handles loading and unsuccessful requests.
+
+The quote feature is independent of the countdown functionality, allowing the main study timer to remain usable without network connectivity.
+
+---
+
+## Key Concepts Covered
+
+| Week | Concept | Implementation |
+|------|---------|----------------|
+| 1 | Kotlin and Android Studio | MainActivity.kt, Kotlin classes, Gradle |
+| 2 | Jetpack Compose Layouts | UtilityApp(), UtilityScreen(), CalendarScreen(), SettingsScreen() |
+| 3 | Material Design 3 | Scaffold, Cards, Navigation, Buttons, Typography, Light/Dark Theme |
+| 4 | App Architecture | TimerViewModel, QuoteViewModel, StateFlow, Repository Pattern, ViewModel Factory |
+| 5 | Web APIs using Retrofit | QuoteApiService, QuoteRepository, Retrofit, Gson Converter |
+
+---
+
+## Technologies Used
+
+| Technology | Purpose |
+|------------|---------|
+| Kotlin | Core application development |
+| Android Studio | Development and debugging environment |
+| Jetpack Compose | Declarative user interface |
+| Material Design 3 | UI design and components |
+| Android ViewModel | Lifecycle-aware state management |
+| StateFlow | Reactive state updates |
+| Kotlin Coroutines | Asynchronous timer and networking operations |
+| Retrofit | REST API communication |
+| Gson Converter | JSON deserialization |
+| AndroidX Lifecycle | Lifecycle-aware UI state observation |
+| Gradle | Build and dependency management |
+| GitHub | Version control and project documentation |
+
+---
+
+## Project Structure
+
+```text
+MobileTech_UtilityApp/
+│
+├── app/
+│   └── src/main/
+│       ├── java/au/edu/jcu/assessment/utilityapp/
+│       │   │
+│       │   ├── MainActivity.kt
+│       │   │
+│       │   ├── network/
+│       │   │   └── QuoteApiService.kt
+│       │   │
+│       │   ├── repository/
+│       │   │   └── QuoteRepository.kt
+│       │   │
+│       │   ├── viewmodel/
+│       │   │   ├── TimerViewModel.kt
+│       │   │   └── QuoteViewModel.kt
+│       │   │
+│       │   └── ui/theme/
+│       │       ├── Color.kt
+│       │       ├── Theme.kt
+│       │       └── Type.kt
+│       │
+│       └── AndroidManifest.xml
+│
+├── build.gradle.kts
+├── settings.gradle.kts
+└── README.md
+```
+
+The project uses dedicated packages for network communication, repository logic, ViewModels, and theme configuration. The primary Composable screens are currently implemented within MainActivity.kt.
+
+---
+
+## Design and Implementation Decisions
+
+### User-Centred Design
+StudyFlow prioritizes essential study information through a clear countdown display, accessible controls, and limited interaction requirements. This approach supports the utility-app principle of providing useful information at a glance.
+
+### Accurate Timer Management
+The countdown uses `SystemClock.elapsedRealtime()` to calculate the remaining duration relative to a monotonic clock. This provides more reliable timing than simply reducing a counter after every coroutine delay.
+
+### Separation of Concerns
+Application logic is managed through ViewModels, while networking responsibilities are separated into Repository and API service components. This reduces unnecessary dependencies between UI and data operations.
+
+### Reactive UI Updates
+StateFlow allows changes in timer status, session counts, and settings to be reflected automatically in the Compose interface.
+
+### Resilient API Integration
+The motivational quote feature includes loading and error handling. Network failures do not prevent users from accessing the application's core timer functionality.
+
+---
+
+## Current Limitations
+
+- Timer preferences and session counts are not stored persistently.
+- The countdown does not currently provide background-service functionality.
+- Study session history and analytics are not implemented.
+- Automatic Focus-to-Break transitions are not included.
+- Motivational quotes require an internet connection for fresh content.
+- Dedicated automated tests for timer behavior and API handling have not yet been implemented.
+
+These limitations define the current application scope and provide clear opportunities for further development.
+
+---
+
+## Suggested Future Enhancements
+
+- Implement DataStore to persist user preferences.
+- Add Room Database for study history.
+- Introduce daily and weekly study analytics.
+- Provide notifications when study sessions finish.
+- Implement automatic Focus and Break transitions.
+- Add customizable session targets.
+- Improve automated testing for ViewModels and UI components.
+- Extend calendar functionality with user-created study reminders.
+
+---
+
+## Version Control
+
+GitHub is used to manage the application source code and document incremental development.
+
+Development is organized around the implementation of core functionality, user interface improvements, state management, API integration, and settings configuration.
+
+Meaningful commits provide a record of project evolution and support maintainability and traceability.
+
+---
+
+## Academic Information
+
+**Institution:** James Cook University Singapore
+
+**Subject:** CP3406 / CP5307 – Mobile Computing
+
+**Assessment:** Assessment 1 – Utility App
+
+**Application Name:** StudyFlow
+
+**Development Language:** Kotlin
+
+**UI Framework:** Jetpack Compose and Material Design 3
+
+**Development Environment:** Android Studio
+
+---
+
+## 📚 License
+
+StudyFlow is developed for educational purposes as part of **CP3406 / CP5307 Assessment 1: Utility App** at James Cook University Singapore.
+
+The project demonstrates the application of modern Android development principles, including Jetpack Compose, Material Design 3, ViewModel-based architecture, reactive state management, and REST API integration.
+
+Third-party libraries and services remain subject to their respective licences and terms of use.3. Apply the Model-View-ViewModel (MVVM) architectural approach to separate UI components from application logic.
 4. Integrate an external REST API to provide motivational content.
 5. Deliver an intuitive user experience through clear visual feedback and accessible controls.
 
