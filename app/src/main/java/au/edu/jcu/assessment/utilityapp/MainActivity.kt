@@ -1,6 +1,8 @@
 package au.edu.jcu.assessment.utilityapp
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -20,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -85,6 +89,7 @@ fun UtilityApp(
         .collectAsStateWithLifecycle()
 
     val timerScrollState = rememberScrollState()
+    val calendarScrollState = rememberScrollState()
     val settingsScrollState = rememberScrollState()
 
     MobileTech_UtilityAppTheme(
@@ -112,6 +117,22 @@ fun UtilityApp(
                         },
                         label = {
                             Text("Timer")
+                        }
+                    )
+
+                    NavigationBarItem(
+                        selected = selectedTab == "Calendar",
+                        onClick = {
+                            selectedTab = "Calendar"
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = "Calendar"
+                            )
+                        },
+                        label = {
+                            Text("Calendar")
                         }
                     )
 
@@ -164,6 +185,13 @@ fun UtilityApp(
                             onReset = {
                                 timerViewModel.resetTimer()
                             }
+                        )
+                    }
+
+                    "Calendar" -> {
+
+                        CalendarScreen(
+                            scrollState = calendarScrollState
                         )
                     }
 
@@ -279,7 +307,7 @@ fun UtilityScreen(
             }
         }
 
-        // DAILY MOTIVATION (MOVED TO TOP)
+        // DAILY MOTIVATION
         DailyMotivationCard(
             quote = quoteState.quote,
             author = quoteState.author,
@@ -672,6 +700,578 @@ fun DailyMotivationCard(
                     modifier = Modifier.align(Alignment.End)
                 )
             }
+        }
+    }
+}
+
+// ============================================
+// JCU ACADEMIC CALENDAR SCREEN
+// ============================================
+
+enum class EventType(
+    val label: String,
+    val containerColor: Color,
+    val contentColor: Color
+) {
+    PUBLIC_HOLIDAY("Public Holiday", Color(0xFFFFF176), Color(0xFF574600)),
+    ORIENTATION("Orientation", Color(0xFFFFF59D), Color(0xFF524800)),
+    TEACHING("Teaching", Color(0xFF80DEEA), Color(0xFF004D40)),
+    DEADLINE("Deadline", Color(0xFFA5D6A7), Color(0xFF1B5E20)),
+    CENSUS("Census Date", Color(0xFFFFCC80), Color(0xFFE65100)),
+    STUDY_WEEK("Study Week", Color(0xFFCFD8DC), Color(0xFF263238)),
+    EXAM("Exam Period", Color(0xFFFF8A80), Color(0xFFB71C1C)),
+    RESULTS("Results", Color(0xFFFFAB91), Color(0xFFBF360C)),
+    SUPP_EXAM("Supp Exams", Color(0xFF9FA8DA), Color(0xFF1A237E))
+}
+
+data class CalendarEvent(
+    val dateText: String,
+    val description: String,
+    val type: EventType
+)
+
+data class MonthEvents(
+    val monthYear: String,
+    val events: List<CalendarEvent>
+)
+
+data class DetailedTrimesterInfo(
+    val code: String,
+    val studyPeriod: String,
+    val title: String,
+    val durationText: String,
+    val orientationSummary: String,
+    val teachingSummary: String,
+    val censusSummary: String,
+    val examSummary: String,
+    val resultsSummary: String,
+    val months: List<MonthEvents>
+)
+
+val detailedTrimesters = listOf(
+    DetailedTrimesterInfo(
+        code = "TR1S",
+        studyPeriod = "SP51",
+        title = "Trimester 1 2026 (TR1S)",
+        durationText = "March 2026 – July 2026",
+        orientationSummary = "Mon 9 Mar – Fri 20 Mar 2026",
+        teachingSummary = "Mon 23 Mar – Sat 13 Jun 2026",
+        censusSummary = "Thu 16 Apr 2026",
+        examSummary = "Thu 11 Jun – Sat 13 Jun 2026",
+        resultsSummary = "Wed 24 Jun 2026",
+        months = listOf(
+            MonthEvents(
+                monthYear = "March 2026",
+                events = listOf(
+                    CalendarEvent("MON 9 - FRI 20", "Orientation", EventType.ORIENTATION),
+                    CalendarEvent("MON 23", "Trimester 1 Begins", EventType.TEACHING),
+                    CalendarEvent("SUN 29", "Enrolments Close", EventType.DEADLINE)
+                )
+            ),
+            MonthEvents(
+                monthYear = "April 2026",
+                events = listOf(
+                    CalendarEvent("FRI 3", "Public Holiday: Good Friday", EventType.PUBLIC_HOLIDAY),
+                    CalendarEvent("THU 16", "Census Date", EventType.CENSUS),
+                    CalendarEvent("MON 27 - THU 30", "Mid-Trimester Recess / Study Week", EventType.STUDY_WEEK)
+                )
+            ),
+            MonthEvents(
+                monthYear = "May 2026",
+                events = listOf(
+                    CalendarEvent("FRI 1", "Public Holiday: Labour Day", EventType.PUBLIC_HOLIDAY),
+                    CalendarEvent("FRI 1", "Last Withdrawal without Academic Penalty", EventType.DEADLINE),
+                    CalendarEvent("SAT 23", "Last Date to Withdraw in MyStudent Portal", EventType.DEADLINE)
+                )
+            ),
+            MonthEvents(
+                monthYear = "June 2026",
+                events = listOf(
+                    CalendarEvent("SAT 6 - WED 10", "Study Vacation", EventType.STUDY_WEEK),
+                    CalendarEvent("THU 11 - SAT 13", "Exam Period", EventType.EXAM),
+                    CalendarEvent("SAT 13", "Trimester 1 Ends", EventType.TEACHING),
+                    CalendarEvent("WED 24", "Results Published", EventType.RESULTS)
+                )
+            ),
+            MonthEvents(
+                monthYear = "July 2026",
+                events = listOf(
+                    CalendarEvent("MON 13 - SAT 18", "Deferred & Supplementary Exams", EventType.SUPP_EXAM)
+                )
+            )
+        )
+    ),
+    DetailedTrimesterInfo(
+        code = "TR2",
+        studyPeriod = "SP52",
+        title = "Trimester 2 2026 (TR2)",
+        durationText = "July 2026 – November 2026",
+        orientationSummary = "Mon 13 Jul – Fri 24 Jul 2026",
+        teachingSummary = "Mon 27 Jul – Sat 17 Oct 2026",
+        censusSummary = "Thu 20 Aug 2026",
+        examSummary = "Thu 15 Oct – Sat 17 Oct 2026",
+        resultsSummary = "Wed 28 Oct 2026",
+        months = listOf(
+            MonthEvents(
+                monthYear = "July 2026",
+                events = listOf(
+                    CalendarEvent("MON 13 - FRI 24", "Orientation", EventType.ORIENTATION),
+                    CalendarEvent("MON 27", "Trimester 2 Begins", EventType.TEACHING)
+                )
+            ),
+            MonthEvents(
+                monthYear = "August 2026",
+                events = listOf(
+                    CalendarEvent("SUN 2", "Enrolments Close", EventType.DEADLINE),
+                    CalendarEvent("MON 10", "Public Holiday: National Day (Observed)", EventType.PUBLIC_HOLIDAY),
+                    CalendarEvent("THU 20", "Census Date", EventType.CENSUS),
+                    CalendarEvent("MON 31", "Mid-Trimester Recess / Study Week", EventType.STUDY_WEEK)
+                )
+            ),
+            MonthEvents(
+                monthYear = "September 2026",
+                events = listOf(
+                    CalendarEvent("TUE 1 - FRI 4", "Mid-Trimester Recess / Study Week", EventType.STUDY_WEEK),
+                    CalendarEvent("FRI 4", "Last Withdrawal without Academic Penalty", EventType.DEADLINE),
+                    CalendarEvent("SAT 26", "Last Date to Withdraw in MyStudent Portal", EventType.DEADLINE)
+                )
+            ),
+            MonthEvents(
+                monthYear = "October 2026",
+                events = listOf(
+                    CalendarEvent("SAT 10 - WED 14", "Study Vacation", EventType.STUDY_WEEK),
+                    CalendarEvent("THU 15 - SAT 17", "Exam Period", EventType.EXAM),
+                    CalendarEvent("SAT 17", "Trimester 2 Ends", EventType.TEACHING),
+                    CalendarEvent("WED 28", "Results Published", EventType.RESULTS)
+                )
+            ),
+            MonthEvents(
+                monthYear = "November 2026",
+                events = listOf(
+                    CalendarEvent("MON 9 - SAT 14", "Deferred & Supplementary Exams", EventType.SUPP_EXAM)
+                )
+            )
+        )
+    ),
+    DetailedTrimesterInfo(
+        code = "TR3",
+        studyPeriod = "SP53",
+        title = "Trimester 3 2026 (TR3)",
+        durationText = "August 2026 – January 2027",
+        orientationSummary = "Mon 31 Aug – Fri 11 Sep 2026",
+        teachingSummary = "Mon 14 Sep – Sat 5 Dec 2026",
+        censusSummary = "Thu 8 Oct 2026",
+        examSummary = "Thu 3 Dec – Sat 5 Dec 2026",
+        resultsSummary = "Wed 18 Dec 2026",
+        months = listOf(
+            MonthEvents(
+                monthYear = "August 2026",
+                events = listOf(
+                    CalendarEvent("MON 10", "Public Holiday: National Day (Observed)", EventType.PUBLIC_HOLIDAY),
+                    CalendarEvent("MON 31", "Orientation", EventType.ORIENTATION)
+                )
+            ),
+            MonthEvents(
+                monthYear = "September 2026",
+                events = listOf(
+                    CalendarEvent("TUE 1 - FRI 11", "Orientation", EventType.ORIENTATION),
+                    CalendarEvent("MON 14", "Trimester 3 Begins", EventType.TEACHING),
+                    CalendarEvent("SUN 20", "Enrolments Close", EventType.DEADLINE)
+                )
+            ),
+            MonthEvents(
+                monthYear = "October 2026",
+                events = listOf(
+                    CalendarEvent("THU 8", "Census Date", EventType.CENSUS),
+                    CalendarEvent("MON 19 - FRI 23", "Study Week", EventType.STUDY_WEEK),
+                    CalendarEvent("FRI 23", "Last Withdrawal without Academic Penalty", EventType.DEADLINE)
+                )
+            ),
+            MonthEvents(
+                monthYear = "November 2026",
+                events = listOf(
+                    CalendarEvent("MON 9", "Public Holiday: Deepavali (Observed)", EventType.PUBLIC_HOLIDAY),
+                    CalendarEvent("SAT 21", "Last Date to Withdraw in MyStudent Portal", EventType.DEADLINE),
+                    CalendarEvent("SAT 28 - MON 30", "Study Vacation", EventType.STUDY_WEEK)
+                )
+            ),
+            MonthEvents(
+                monthYear = "December 2026",
+                events = listOf(
+                    CalendarEvent("TUE 1 - WED 2", "Study Vacation", EventType.STUDY_WEEK),
+                    CalendarEvent("THU 3 - SAT 5", "Exam Period", EventType.EXAM),
+                    CalendarEvent("SAT 5", "Trimester 3 Ends", EventType.TEACHING),
+                    CalendarEvent("WED 18", "Results Published", EventType.RESULTS),
+                    CalendarEvent("FRI 25", "Public Holiday: Christmas Day", EventType.PUBLIC_HOLIDAY)
+                )
+            ),
+            MonthEvents(
+                monthYear = "January 2027",
+                events = listOf(
+                    CalendarEvent("FRI 1", "Public Holiday: New Year's Day", EventType.PUBLIC_HOLIDAY),
+                    CalendarEvent("MON 11 - SAT 16", "Deferred & Supplementary Exams", EventType.SUPP_EXAM)
+                )
+            )
+        )
+    )
+)
+
+@Composable
+fun CalendarScreen(
+    scrollState: ScrollState
+) {
+    val context = LocalContext.current
+    var selectedTrimesterCode by rememberSaveable { mutableStateOf("TR3") }
+
+    val selectedTrimester = detailedTrimesters.find { it.code == selectedTrimesterCode }
+        ?: detailedTrimesters.last()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+
+        // HEADER
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "JCU Calendar",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = "James Cook University Singapore",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = null,
+                    modifier = Modifier.padding(14.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        // TRIMESTER SELECTOR
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Select Trimester (TRI)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    detailedTrimesters.forEach { trimester ->
+                        val isSelected = trimester.code == selectedTrimesterCode
+                        if (isSelected) {
+                            Button(
+                                onClick = { selectedTrimesterCode = trimester.code },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(trimester.code, fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { selectedTrimesterCode = trimester.code },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(trimester.code)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // TRIMESTER SUMMARY OVERVIEW CARD
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = selectedTrimester.title,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+
+                        Text(
+                            text = "Study Period: ${selectedTrimester.studyPeriod}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primary
+                    ) {
+                        Text(
+                            text = selectedTrimester.durationText,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+
+                // Schedule items
+                CalendarItem(icon = "🎓", title = "Orientation", dateText = selectedTrimester.orientationSummary)
+                CalendarItem(icon = "📚", title = "Teaching Period", dateText = selectedTrimester.teachingSummary)
+                CalendarItem(icon = "📌", title = "Census Date", dateText = selectedTrimester.censusSummary)
+                CalendarItem(icon = "📝", title = "Exam Period", dateText = selectedTrimester.examSummary)
+                CalendarItem(icon = "📊", title = "Results Published", dateText = selectedTrimester.resultsSummary)
+            }
+        }
+
+        // EVENT LEGEND
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Calendar Legend",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    EventTypeBadge(EventType.PUBLIC_HOLIDAY)
+                    EventTypeBadge(EventType.ORIENTATION)
+                    EventTypeBadge(EventType.TEACHING)
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    EventTypeBadge(EventType.CENSUS)
+                    EventTypeBadge(EventType.STUDY_WEEK)
+                    EventTypeBadge(EventType.EXAM)
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    EventTypeBadge(EventType.RESULTS)
+                    EventTypeBadge(EventType.SUPP_EXAM)
+                    EventTypeBadge(EventType.DEADLINE)
+                }
+            }
+        }
+
+        // IMPORTANT DATES LIST MONTH BY MONTH
+        Text(
+            text = "Important Dates (${selectedTrimester.code})",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        selectedTrimester.months.forEach { month ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = month.monthYear,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    month.events.forEach { event ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier.width(110.dp)
+                            ) {
+                                Text(
+                                    text = event.dateText,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                EventTypeBadge(event.type)
+
+                                Text(
+                                    text = event.description,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+
+                        if (event != month.events.last()) {
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // OFFICIAL LINK CARD
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Official Academic Calendar",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Text(
+                    text = "For official PDF downloads and full year-by-year details, visit the JCU Singapore official portal.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Button(
+                    onClick = {
+                        val urlIntent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://www.jcu.edu.sg/courses-and-study/admissions/academic-calendar")
+                        )
+                        context.startActivity(urlIntent)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text("Open JCU Academic Calendar Portal")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun EventTypeBadge(type: EventType) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = type.containerColor
+    ) {
+        Text(
+            text = type.label,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = type.contentColor,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun CalendarItem(
+    icon: String,
+    title: String,
+    dateText: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(text = icon, fontSize = 20.sp)
+
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+
+            Text(
+                text = dateText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+            )
         }
     }
 }
