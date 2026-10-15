@@ -352,7 +352,7 @@ Third-party libraries and services remain subject to their respective licences a
 ### Clone Repository
 
 ```bash
-git clone https://github.com/<ayephyusinsoejcu>/MobileTech_UtilityApp.git
+git clone https://github.com/ayephyusinsoejcu/MobileTech_UtilityApp.git
 ```
 
 ---
